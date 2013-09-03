@@ -22,7 +22,8 @@ public class IPV6C extends JFrame implements ActionListener
         this.setSize(600, 400);
         panel = new JPanel();
 	label = new JLabel("Enter IP/Subnetmask (e.g 192.168.42.1/255.255.255.0 or 2a00:42:42::1/56)");
-	tf = new JTextField("2a00:42:42::1/56",40);
+	tf = new JTextField("2001:db8:42::1/56",40);
+
 	tf.addActionListener(this);
 	calcButton = new JButton("Calc");
 	calcButton.addActionListener(this);
@@ -42,11 +43,8 @@ public class IPV6C extends JFrame implements ActionListener
     }
 
     public void actionPerformed (ActionEvent ae){
-        // Die Quelle wird mit getSource() abgefragt und mit den
-        // Buttons abgeglichen. Wenn die Quelle des ActionEvents einer
-        // der Buttons ist, wird der Text des JLabels entsprechend geändert
         if ((ae.getSource() == this.calcButton) || (ae.getSource() == this.tf)){
-            result.setText("Button 1 wurde betätigt");
+            result.setText("");
 	    String val=tf.getText();
 	    try {
 		String [] valA=val.split("/");
@@ -80,12 +78,12 @@ public class IPV6C extends JFrame implements ActionListener
 	}
         SubnetInfo info = utils.getInfo();
 
-	output=output+"Network:        \t"+info.getNetworkAddress()+"\n"; 
-	output=output+"First usable IP:\t"+info.getLowAddress()+"\n"; 
-	output=output+"Last usable IP: \t"+info.getHighAddress()+"\n"; 
-	output=output+"Broadcast:      \t"+info.getBroadcastAddress()+"\n"; 
+	output=output+"Network:        \t"+info.getNetworkAddress()+"\t["+Integer.toBinaryString(info.asInteger(info.getNetworkAddress()))+"]\n"; 
+	output=output+"First usable IP:\t"+info.getLowAddress()+"\t["+Integer.toBinaryString(info.asInteger(info.getLowAddress()))+"]\n"; 
+	output=output+"Last usable IP: \t"+info.getHighAddress()+"\t["+Integer.toBinaryString(info.asInteger(info.getHighAddress()))+"]\n"; 
+	output=output+"Broadcast:      \t"+info.getBroadcastAddress()+"\t["+Integer.toBinaryString(info.asInteger(info.getBroadcastAddress()))+"]\n"; 
 	output=output+"CIDR Pefix:     \t"+info.getCidrSignature()+"\n"; 
-	output=output+"Netmask:        \t"+info.getNetmask()+"\n"; 
+	output=output+"Netmask:        \t"+info.getNetmask()+"\t["+Integer.toBinaryString(info.asInteger(info.getNetmask()))+"]\n"; 
 	output=output+"Num. usable addresses:"+info.getAddressCount()+"\n";
 	//	IPv6Address  adr= IPv6Address.fromString(ip);
 	//output=output+"is IPv4 Mapped:  \t"+adr.isIPv4Mapped()+"\n";
@@ -97,6 +95,11 @@ public class IPV6C extends JFrame implements ActionListener
 	result.setText(output);
     }
 
+    public  byte hexToByte(String s) {
+	byte b=(byte) ((Character.digit(s.charAt(0), 16) << 4)
+		       + Character.digit(s.charAt(1), 16));
+	return b;
+    }
     public void printIpv6 ( String netVal, String ip, String mask) {
 	IPv6Network net = IPv6Network.fromString(netVal);
 	String output="IPV6\n";
@@ -125,10 +128,30 @@ public class IPV6C extends JFrame implements ActionListener
 	    output=output+"Last /64 Network:      \t"+lastnet.getFirst().toLongString()+"/64\n"; 
 	    BigInteger numberOfNetw= new BigInteger("2").pow(64-net.getNetmask().asPrefixLength());
 	    output=output+"Number of /64 nets:\t"+numberOfNetw+"\n";
+	} 
+	if (net.getNetmask().asPrefixLength()>64) {
+	    output=output+"\nWarning: For stateless address autoconfiguration (SLAAC) subnets\n      require a /64 address block. See RFC 4291 section 2.5.1.\n";
 	}
-
 	IPv6Address  adr= IPv6Address.fromString(ip);
 	String adrS=adr.toLongString().replace(":","");
+	output=output+"\n";
+	if ((adrS.substring(22,24).equals("ff")) &&
+	    (adrS.substring(24,26).equals("fe"))) {
+	    int b= hexToByte(adrS.substring(16,18));
+	    b=b^2;	
+	    String fs=Integer.toHexString(b);
+	    if (fs.length()==1) {
+		fs="0"+fs;
+	    }
+	   
+	    output=output+"EUI-48/MAC address:\t"+
+		fs+":"+
+		adrS.substring(18,20)+":"+
+		adrS.substring(20,22)+":"+
+		adrS.substring(26,28)+":"+
+		adrS.substring(28,30)+":"+
+		adrS.substring(30,32)+"\n";
+	}
 	int i,len=adrS.length();
 	StringBuffer revDNS = new StringBuffer(70);
 	StringBuffer revf64DNS = new StringBuffer(70);
@@ -147,15 +170,29 @@ public class IPV6C extends JFrame implements ActionListener
 	    }
 	}
 
-	output=output+"\nReverse DNS:     \t"+revDNS.toString()+"ip6.arpa.\n";
+	output=output+"Reverse DNS:     \t"+revDNS.toString()+"ip6.arpa.\n";
 	output=output+"/64 DNS start:   \t"+revf64DNS.toString()+"ip6.arpa.\n";
 	output=output+"/64 DNS end:     \t"+reve64DNS.toString()+"\n\n";
-	output=output+"is IPv4 mapped:  \t"+adr.isIPv4Mapped()+"\n";
-	output=output+"is Site local:   \t"+adr.isSiteLocal()+"\n";
-	output=output+"is Link local:   \t"+adr.isLinkLocal()+"\n";		
-	// FIXME MacAddress
+	if (adr.isIPv4Mapped())
+	    output=output+"The Address is IPv4 mapped.\n";
+	if (adr.isSiteLocal()) 
+	    output=output+"The Address is site local.\n";
+	if (adr.isLinkLocal())
+	    output=output+"The Address is Link local.\n";
+	
+	if (IPv6Network.fromString("2000::/3").contains(adr)) 
+	    output=output+"The Address is in global-unicast network.\n";
 
+	if (IPv6Network.fromString("2001::/32").contains(adr)) 
+	    output=output+"Teredo network address.\n";
 
+	if (IPv6Network.fromString("2001:db8::/32").contains(adr)) 
+	    output=output+"Dokumentation address. Do not use in real life.\n";
+
+	if (IPv6Network.fromString("64:ff9b::/96").contains(adr))
+	    output=output+"The Address is in NAT64 space. See RFC 6146\n";
+
+		
 
 	result.setText(output);
     }
