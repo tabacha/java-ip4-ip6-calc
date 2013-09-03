@@ -1,0 +1,32 @@
+<project>
+
+   <property name="lib.dir"     value="lib"/>
+	 <path id="classpath">
+	  <fileset dir="${lib.dir}" includes="**/*.jar"/>
+   </path>
+
+    <target name="clean">
+        <delete dir="build"/>
+    </target>
+
+
+    <target name="compile">
+        <mkdir dir="build/classes"/>
+        <javac srcdir="src" destdir="build/classes" classpathref="classpath" />
+    </target>
+
+    <target name="jar">
+        <mkdir dir="build/jar"/>
+        <jar destfile="build/jar/ipv4ipv6calc.jar" basedir="build/classes">
+	    <zipgroupfileset dir="${lib.dir}" includes="*.jar"/>
+            <manifest>
+                <attribute name="Main-Class" value="im.anders.ipv4ipv6calc.IPV6C"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="run">
+        <java jar="build/jar/ipv4ipv6calc.jar" fork="true"/>
+    </target>
+
+</project>
