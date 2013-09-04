@@ -1,10 +1,26 @@
 <project>
-
    <property name="lib.dir"     value="lib"/>
 	 <path id="classpath">
 	  <fileset dir="${lib.dir}" includes="**/*.jar"/>
    </path>
+   <property name="launch4j.dir" location="../launch4j" />
+   <taskdef name="launch4j"
+    classname="net.sf.launch4j.ant.Launch4jTask"
+    classpath="${launch4j.dir}/launch4j.jar
+        :${launch4j.dir}/lib/xstream.jar" />
 
+   <target name="win">
+     <launch4j>
+       <config headerType="gui" outfile="ipv4ipv6calc.exe"
+       jar="build/jar/ipv4ipv6calc.jar" >
+         <classPath mainClass="im.anders.ipv4ipv6calc.IPV6C">
+           <cp>ipv4ipv6calc.jar</cp>
+    </classPath>
+    <jre minVersion="1.6.0">
+    </jre>
+  </config>
+</launch4j>
+</target>
     <target name="clean">
         <delete dir="build"/>
     </target>
