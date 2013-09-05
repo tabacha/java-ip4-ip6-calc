@@ -1,6 +1,7 @@
 package im.anders.ipv4ipv6calc;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.Font;
 import javax.swing.*;
 import com.googlecode.ipv6.*;
 import java.util.Arrays;
@@ -20,7 +21,7 @@ public class IPV6C extends JFrame implements ActionListener
     public JTextPane result;
     public IPV6C() {
 	this.setTitle("IPv6 Clalculator");
-        this.setSize(600, 400);
+        this.setSize(800, 400);
         panel = new JPanel();
 	label = new JLabel("Enter IP/Subnetmask (e.g 192.168.42.1/255.255.255.0 or 2a00:42:42::1/56)");
 	tf = new JTextField("2001:db8:42::1/56",40);
@@ -29,6 +30,8 @@ public class IPV6C extends JFrame implements ActionListener
 	calcButton = new JButton("Calc");
 	calcButton.addActionListener(this);
 	result = new JTextPane();
+	Font font=new Font("Monospaced", Font.PLAIN, 11); 
+	result.setFont(font);
 	panel.add(label);
 	panel.add(tf);
 	panel.add(calcButton);
@@ -123,10 +126,10 @@ public class IPV6C extends JFrame implements ActionListener
 
 
 	if (net.getNetmask().asPrefixLength()<64) {
-	    output=output+"\nFirst /64 Network:     \t"+net.getFirst().toLongString()+"/64\n"; 
+	    output=output+"\nFirst /64 Network: \t"+net.getFirst().toLongString()+"/64\n"; 
 	    
 	    IPv6Network lastnet = IPv6Network.fromString(net.getLast().add(-1).toLongString()+"/64");
-	    output=output+"Last /64 Network:      \t"+lastnet.getFirst().toLongString()+"/64\n"; 
+	    output=output+"Last /64 Network:  \t"+lastnet.getFirst().toLongString()+"/64\n"; 
 	    BigInteger numberOfNetw= new BigInteger("2").pow(64-net.getNetmask().asPrefixLength());
 	    output=output+"Number of /64 nets:\t"+numberOfNetw+"\n";
 	} 
