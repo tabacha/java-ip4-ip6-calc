@@ -3,13 +3,38 @@
 	 <path id="classpath">
 	  <fileset dir="${lib.dir}" includes="**/*.jar"/>
    </path>
-   <property name="launch4j.dir" location="../launch4j" />
-   <taskdef name="launch4j"
-    classname="net.sf.launch4j.ant.Launch4jTask"
-    classpath="${launch4j.dir}/launch4j.jar
-        :${launch4j.dir}/lib/xstream.jar" />
+   <property name="launch4j.dir" location="lib-src/launch4j" />
 
-   <target name="win" depends="jar">
+   <target name="check-file">
+       <available property="launch4j.present" file="lib-src/launch4j/bin/ld"/>
+       <available property="commons.present" file="lib/commons-net-3.3.jar" />
+       <available property="javaipv6.present" file="lib/java-ipv6-0.15.jar" />
+
+   </target>
+   <target name="download.launch4j" depends="check-file" unless="launch4j.present">
+      <mkdir dir="lib-src"/>
+      <get src="http://sourceforge.net/projects/launch4j/files/latest/download?source=files" dest="launch4j-latest.tgz" /> 
+      <untar src="launch4j-latest.tgz" dest="lib-src/" compression="gzip"/>
+      <chmod file="lib-src/launch4j/bin/windres" perm="755"/>
+      <chmod file="lib-src/launch4j/bin/ld" perm="755"/>
+</target>
+   <target name="download.javaipv6" depends="check-file" unless="javaipv6.present">
+      <mkdir dir="lib"/>
+      <get src="http://java-ipv6.googlecode.com/files/java-ipv6-0.15.jar" dest="lib/java-ipv6-0.15.jar" />
+   </target>
+   <target name="download.apache.commons" depends="check-file" unless="commons.present">
+      <mkdir dir="lib-src"/>
+      <mkdir dir="lib"/>
+      <get src="http://www.poolsaboveground.com/apache/commons/net/binaries/commons-net-3.3-bin.tar.gz" dest="lib-src/commons-net-3.3-bin.tar.gz" />
+      <untar src="lib-src/commons-net-3.3-bin.tar.gz" dest="lib-src/" compression="gzip"/>
+      <copy file="lib-src/commons-net-3.3/commons-net-3.3.jar" todir="lib/"/>
+   </target>
+   <target name="win" depends="download.launch4j, jar">
+   <taskdef name="launch4j"
+       classname="net.sf.launch4j.ant.Launch4jTask"
+        classpath="${launch4j.dir}/launch4j.jar
+        :${launch4j.dir}/lib/xstream.jar" />
+	
      <mkdir dir="build/win"/>
      <launch4j>
        <config headerType="gui" outfile="build/win/ipv4ipv6calc.exe"
@@ -27,7 +52,7 @@
     </target>
 
 
-    <target name="compile">
+    <target name="compile" depends="download.javaipv6, download.apache.commons">
         <mkdir dir="build/classes"/>
         <javac srcdir="src" destdir="build/classes" classpathref="classpath" />
     </target>
